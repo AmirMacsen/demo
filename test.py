@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 import threading
 import socket
@@ -170,7 +171,7 @@ class NetworkTestWorker(QObject):
 class NetworkTool(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("高级网络诊断工具")
+        self.setWindowTitle("网速先知")
         self.setGeometry(200, 200, 1000, 800)
         self.setMinimumSize(900, 700)
 
@@ -429,11 +430,41 @@ class NetworkTool(QMainWindow):
         font.setPointSize(10)
         self.setFont(font)
 
+    def is_valid_ip(self, ip):
+        """
+        检查输入是否为有效的 IPv4 地址
+        """
+        pattern = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+        return bool(re.match(pattern, ip))
+
+    def is_valid_domain(self, domain):
+        """
+        检查输入是否为有效的域名
+        """
+        pattern = r'^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$'
+        return bool(re.match(pattern, domain))
+
+    def validate_ip_or_domain(self, input_str):
+        """
+        对输入的 IP 地址或域名进行有效性校验
+        """
+        if self.is_valid_ip(input_str):
+            return True
+        elif self.is_valid_domain(input_str):
+            return True
+        return False
+
     def start_testing(self):
         """开始测试"""
         print("开始测试")  # 调试输出
         # 获取并验证输入
         targets = self._parse_targets()
+        flag = True
+        for target in targets:
+            if not self.validate_ip_or_domain(target):
+                self.show_warning(f"{target} 不是一个有效的IP地址或域名")
+                return
+
         if not targets:
             self.show_warning("请输入至少一个目标地址")
             return
@@ -908,9 +939,11 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
 
+    icon = QIcon("statics/network.svg")
     # 设置应用程序信息
-    app.setApplicationName("高级网络诊断工具")
+    app.setApplicationName("网速先知")
     app.setApplicationVersion("1.0.0")
+    app.setWindowIcon(icon)
     app.setOrganizationName("NetworkTools")
 
     window = NetworkTool()
